@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>
+  *{box-sizing:border-box} html,body{margin:0;height:100%}
+  body{background:radial-gradient(120% 90% at 50% 0%, #0c2a2b, #06100f);
+       display:flex;flex-direction:column;align-items:center;justify-content:center;
+       font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#eaf6f5;overflow:hidden}
+
+  #cwasa{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;background:#0b1020}
+  body.cwasa-on #cwasa{display:block}
+  body.cwasa-on .placeholder{display:none}
+
+  .placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .stagewrap{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px}
+  svg{filter:drop-shadow(0 18px 26px rgba(0,0,0,.45))}
+  .figure *{transform-box:fill-box;transform-origin:center}
+  .word{font-size:34px;font-weight:800;color:#eaf6f5;min-height:42px;direction:rtl}
+  .fr{font-size:14px;color:#8fb3b2;margin-top:-8px}
+  .hint{position:absolute;top:14px;left:0;right:0;text-align:center;font-size:11px;color:#5e8483}
+  .signing .arm-l{animation:sl var(--dur,1.6s) ease-in-out var(--loop,1)}
+  .signing .arm-r{animation:sr var(--dur,1.6s) ease-in-out var(--loop,1)}
+  .signing .head{animation:hd var(--dur,1.6s) ease-in-out var(--loop,1)}
+  @keyframes sl{0%{transform:rotate(0) translateY(0)}25%{transform:rotate(-26deg) translateY(-10px)}
+    55%{transform:rotate(14deg) translateY(-4px)}80%{transform:rotate(-8deg)}100%{transform:none}}
+  @keyframes sr{0%{transform:rotate(0) translateY(0)}30%{transform:rotate(28deg) translateY(-12px)}
+    60%{transform:rotate(-12deg) translateY(-3px)}100%{transform:none}}
+  @keyframes hd{0%,100%{transform:rotate(0)}40%{transform:rotate(4deg)}70%{transform:rotate(-3deg)}}
+  </style>
+</head>
+<body>
+
+  <iframe id="cwasa" title="JASigning signer" allow="autoplay"></iframe>
+
+  <div class="placeholder">
+    <div class="hint" id="hint">loading the JASigning signer…</div>
+    <div class="stagewrap">
+      <svg class="figure" id="fig" width="200" height="210" viewBox="0 0 200 210">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#2ee6b6"/><stop offset="1" stop-color="#0e7c7b"/>
+        </linearGradient></defs>
+        <ellipse cx="100" cy="198" rx="56" ry="9" fill="rgba(0,0,0,.35)"/>
+        <rect class="body" x="66" y="86" width="68" height="84" rx="26" fill="url(#g)"/>
+        <g class="arm-l"><rect x="50" y="92" width="20" height="62" rx="10" fill="#19b0ad"/>
+          <circle cx="60" cy="150" r="12" fill="#2ee6b6"/></g>
+        <g class="arm-r"><rect x="130" y="92" width="20" height="62" rx="10" fill="#19b0ad"/>
+          <circle cx="140" cy="150" r="12" fill="#2ee6b6"/></g>
+        <circle class="head" cx="100" cy="54" r="30" fill="url(#g)"/>
+        <circle cx="90" cy="50" r="3.4" fill="#06302c"/><circle cx="110" cy="50" r="3.4" fill="#06302c"/>
+        <path d="M90 64 q10 8 20 0" stroke="#06302c" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div class="word ar" id="word">…</div>
+      <div class="fr" id="fr"></div>
+    </div>
+  </div>
+
+<script src="cwasa/config.js"></script>
+<script>
+(function(){
+  var CFG  = window.ALSL_AVATAR_CONFIG || {};
+  var useCwasa = (CFG.engine !== 'placeholder');
+  var fig    = document.getElementById('fig');
+  var wordEl = document.getElementById('word');
+  var frEl   = document.getElementById('fr');
+  var hintEl = document.getElementById('hint');
+  var cwasaFrame = document.getElementById('cwasa');
+
+  var mode        = 'pending';
+  var seq         = null;
+  var seqSpeed    = 1;
+  var seqIdx      = 0;
+  var seqToken    = 0;
+  var segTimer    = null;
+  var loopO       = null;
+  var loopTimer   = null;
+  var loopAt      = 0;
+
+  function CW(){ try{ return cwasaFrame.contentWindow && cwasaFrame.contentWindow.CWASA; }catch(e){ return null; } }
+  function estMs(n, speed){ return (1300 + Math.min(n||0,40)*45) / (speed||1); }
+
+  function animate(durMs, loop){
+    fig.classList.remove('signing'); void fig.offsetWidth;
+    fig.style.setProperty('--dur', (durMs/1000)+'s');
+    fig.style.setProperty('--loop', loop ? 'infinite' : '1');
+    fig.classList.add('signing');
+  }
+  function placeholderPlay(o){
+    wordEl.textContent = o.label || '';
+    frEl.textContent   = o.fr || '';
+    animate(estMs(o.n, o.speed), !!o.loop);
+  }
+
+  function cwasaPlay(o){
+    var cw = CW();
+    if(!cw || typeof cw.playSiGMLText !== 'function'){ placeholderPlay(o); return; }
+    fetch(o.url).then(function(r){ return r.text(); }).then(function(sigml){
+      try{ cw.playSiGMLText(sigml); }catch(e){}
+    }).catch(function(){  });
+  }
+
+  function doPlay(o){ (mode === 'cwasa') ? cwasaPlay(o) : placeholderPlay(o); }
+
+  function clearSeq(){ if(segTimer){ clearTimeout(segTimer); segTimer=null; } seq=null; }
+  function clearLoop(){ if(loopTimer){ clearTimeout(loopTimer); loopTimer=null; } }
+  function loopArm(o){
+    clearLoop();
+    loopTimer = setTimeout(loopReplay, estMs(o.n, o.speed) + 800);
+  }
+  function loopReplay(){
+    if(!loopO || mode!=='cwasa') return;
+    var minGap = Math.max(900, estMs(loopO.n, loopO.speed));
+    if(Date.now() - loopAt < minGap){ loopArm(loopO); return; }
+    loopAt = Date.now(); cwasaPlay(loopO); loopArm(loopO);
+  }
+  function playNext(){
+    if(!seq || seqIdx >= seq.length){ clearSeq(); return; }
+    var it = seq[seqIdx++];
+    var myToken = seqToken;
+    doPlay({label:it.label, fr:it.fr, url:it.url, n:it.n, speed:seqSpeed, loop:false});
+
+    var ceil = estMs(it.n, seqSpeed) + 600;
+    segTimer = setTimeout(function(){ if(myToken === seqToken){ playNext(); } }, ceil);
+  }
+
+  window.cwasaIdle = function(){
+    if(mode !== 'cwasa') return;
+    if(seq && seqIdx < seq.length){
+      if(segTimer){ clearTimeout(segTimer); segTimer=null; }
+      playNext();
+    } else if(loopO){
+      loopReplay();
+    }
+  };
+
+  window.AVATAR = {
+    play: function(o){ o=o||{}; seqToken++; clearSeq(); clearLoop();
+      loopO = o.loop ? o : null; loopAt = Date.now(); doPlay(o);
+      if(loopO && mode==='cwasa') loopArm(o);
+    },
+    playSequence: function(items, o){
+      o=o||{}; seqToken++; clearSeq(); clearLoop(); loopO = null;
+      seq = items||[]; seqSpeed = o.speed || 1; seqIdx = 0;
+      playNext();
+    },
+    stop: function(){
+      seqToken++; clearSeq(); clearLoop(); loopO = null;
+      if(fig) fig.classList.remove('signing');
+      var cw = CW(); if(cw && typeof cw.stopSiGML === 'function'){ try{ cw.stopSiGML(); }catch(e){} }
+    }
+  };
+
+  var announced = false;
+  function announceReady(){ if(announced) return; announced = true;
+    if(window.parent && window.parent.signerReady){ try{ window.parent.signerReady(); }catch(e){} } }
+
+  window.cwasaReady = function(){
+    if(mode === 'placeholder') return;
+    mode = 'cwasa';
+    document.body.classList.add('cwasa-on');
+    announceReady();
+  };
+  function fallback(){
+    if(mode === 'cwasa') return;
+    mode = 'placeholder';
+    if(hintEl) hintEl.textContent =
+      'lightweight placeholder · the JASigning avatar could not start on this device';
+    announceReady();
+  }
+
+  if(useCwasa){
+    cwasaFrame.src = 'cwasa/player.html';
+    cwasaFrame.addEventListener('error', fallback);
+    setTimeout(function(){ if(mode === 'pending') fallback(); }, 12000);
+  } else {
+    fallback();
+  }
+})();
+  </script>
+</body>
+</html>

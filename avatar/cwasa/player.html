@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>ALSL signer · JASigning / CWASA</title>
+
+<!-- Real CWASA / JASigning engine (University of East Anglia). Self-hosted so
+     the avatar works offline. See ./NOTICE.md for attribution + provenance.
+     This page sits at the CWASA layout root: cwa/, avatars/, shaders/ are its
+     siblings. We pass jasBase to CWASA.init() (below) so the engine resolves
+     ALL of its resources (config, avatar JARs, h2s.xsl) from here on disk
+     instead of from its built-in UEA fallback URL. -->
+<link rel="stylesheet" href="cwa/cwasa.css"/>
+<script type="text/javascript" src="cwa/allcsa.js"></script>
+
+<style>
+  html,body{margin:0;height:100%;background:#0b1020;overflow:hidden}
+  /* the WebGL avatar fills the whole iframe */
+  #stage,.CWASAAvatar{width:100%;height:100%}
+  #stage{position:absolute;inset:0}
+  /* the avatar-picker menu CWASA can emit — we only have Anna, so hide it */
+  .CWASAAvMenu,.CWASAGUI{display:none !important}
+</style>
+</head>
+<body onload="boot();">
+  <div id="stage"><div class="CWASAAvatar av0"></div></div>
+  <!-- hidden mount the engine may also look for; kept so nothing errors -->
+  <span class="CWASAAvMenu av0"></span>
+
+<script>
+/* ---------------------------------------------------------------------------
+   Boot the engine against LOCAL resources, then report two real engine events
+   up to the bridge (avatar/index.html, same origin):
+     • avatarloaded → the human avatar is built and ready to sign
+     • animidle     → the current sign finished (used to advance a sequence)
+   The bridge owns the window.AVATAR contract and drives playback by calling
+   this frame's CWASA.playSiGMLText / CWASA.stopSiGML directly.
+--------------------------------------------------------------------------- */
+function up(name){ try{ if(window.parent && typeof window.parent[name]==='function') window.parent[name](); }catch(e){} }
+
+function boot(){
+  if(!window.CWASA){ return; }            // engine script failed to load
+  try{
+    if(typeof CWASA.addHook === 'function'){
+      CWASA.addHook('avatarloaded', function(){ up('cwasaReady'); });
+      CWASA.addHook('animidle',     function(){ up('cwasaIdle');  });
+    }
+  }catch(e){}
+
+  // Resolve the engine's base to THIS folder, on THIS origin, so every asset
+  // (cwa/cwacfg.json, cwa/h2s.xsl, avatars/anna.jar, shaders/…) loads locally
+  // and the app stays offline-capable. Without this, CWASA falls back to its
+  // built-in https://vhg.cmp.uea.ac.uk/… URL.
+  var jasBase = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
+  try{ CWASA.init({ jasBase: jasBase }); }
+  catch(e){ try{ CWASA.init(); }catch(_){} }
+}
+</script>
+</body>
+</html>

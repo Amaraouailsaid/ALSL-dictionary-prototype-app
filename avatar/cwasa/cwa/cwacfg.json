@@ -1,0 +1,31 @@
+{
+  "description"     : "======== CWASA installation config — ALSL Dictionary (self-hosted, offline) ========",
+
+  "jasBase"         : "jas/",
+  "jasVersionTag"   : "loc2023",
+
+  "sigmlBase"       : "sigml",
+  "avJARBase"       : "avatars",
+  "avJSONBase"      : "avjson",
+  "useAvatarJARs"   : true,
+
+  "animgenFPS"      : 30,
+
+  "avs"     : [ "anna" ],
+  "avsfull" : [ "anna" ],
+
+  "avSettings" : [
+    {
+      "description":      "ALSL signer — Anna, framed on head + hands",
+      "width":            384,
+      "height":           320,
+      "avList":           "avs",
+      "initAv":           "anna",
+      "initCamera":       [ 0, 0.45, 2.35, 5, 18, 30, -1, -1 ],
+      "initSpeed":        0,
+      "rateSpeed":        5,
+      "allowFrameSteps":  true,
+      "allowSiGMLText":   true
+    }
+  ]
+}

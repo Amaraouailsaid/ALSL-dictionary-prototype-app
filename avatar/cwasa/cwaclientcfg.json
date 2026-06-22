@@ -1,0 +1,14 @@
+{
+  "description"     : "======== CWASA client config — ALSL Dictionary: a single Anna signer ========",
+
+  "avSettings" : [
+    {
+      "width":            384,
+      "height":           320,
+      "avList":           "avs",
+      "initAv":           "anna",
+      "allowFrameSteps":  true,
+      "allowSiGMLText":   true
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "alsl-dictionary",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Algerian Sign Language Dictionary — static site served via Express",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode": "^1.5.4"
+  }
+}

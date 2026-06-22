@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Scan to open · ALSL Dictionary</title>
+<link rel="stylesheet" href="styles.css"/>
+<style>
+  body{display:grid;place-items:center;min-height:100vh}
+  .qrwrap{max-width:520px;margin:24px;text-align:center}
+  .qrcard{background:#fff;border-radius:24px;padding:24px;display:inline-block;box-shadow:var(--shadow)}
+  .qrcard img{display:block;width:300px;height:300px}
+  h1{font-size:22px;margin:18px 0 6px}
+  p{color:var(--muted);margin:6px 0}
+  .url{font-family:ui-monospace,Menlo,monospace;font-size:14px;color:var(--emerald);word-break:break-all;
+    background:var(--surface2);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;margin:14px 0}
+  ol{text-align:start;color:var(--muted);font-size:14px;line-height:1.7;max-width:380px;margin:14px auto 0;padding-inline-start:20px}
+  .home{display:inline-block;margin-top:18px;color:var(--teal);font-weight:600}
+  </style>
+</head>
+<body>
+  <div class="qrwrap">
+    <div class="qrcard"><img src="qr.png" alt="QR code to open the ALSL Dictionary"/></div>
+    <h1>📲 Scan to open the dictionary</h1>
+    <p>Point your phone camera at the code.</p>
+    <div class="url" id="url">…</div>
+    <ol>
+      <li>Scan the code — the app opens in your browser.</li>
+      <li>Tap your browser menu → <b>“Add to Home screen” / “Install app”</b>.</li>
+      <li>It installs like a normal app (offline-capable) with its own icon.</li>
+    </ol>
+    <a class="home" href="./">← Back to the dictionary</a>
+  </div>
+<script>
+  fetch('qr-url').then(r=>r.json()).then(d=>{ document.getElementById('url').textContent = d.url; })
+    .catch(()=>{ document.getElementById('url').textContent = location.origin + '/'; });
+  </script>
+</body>
+</html>
